@@ -15,9 +15,8 @@
 }
 
 .title {
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: 32px;
+  font-family: "Major Mono Display", monospace;
 }
 
 .status {
@@ -245,8 +244,10 @@
 }
 
 .panelGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
   gap: 10px;
   min-height: 140px;
 }
@@ -254,6 +255,7 @@
 .panelColumn {
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
   gap: 6px;
 }
 
