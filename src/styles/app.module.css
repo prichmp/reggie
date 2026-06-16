@@ -106,7 +106,15 @@
   border-color: var(--border-focus);
 }
 
-.flagsField {
+.flagsDropdown {
+  position: relative;
+}
+
+.flagsButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 90px;
   font-family: var(--font-mono);
   font-size: 14px;
   background: var(--bg-input);
@@ -114,12 +122,91 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 8px 10px;
-  width: 90px;
+  cursor: pointer;
 }
 
-.flagsField:focus {
+.flagsButton:hover,
+.flagsButton[aria-expanded="true"] {
+  border-color: var(--border-focus);
+}
+
+.flagsButton:focus-visible {
   outline: none;
   border-color: var(--border-focus);
+}
+
+.flagsSummary {
+  flex: 1;
+  text-align: left;
+}
+
+.flagsPlaceholder {
+  flex: 1;
+  text-align: left;
+  color: var(--text-faint);
+}
+
+.flagsCaret {
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+.flagsMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 5;
+  min-width: 220px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.flagOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.flagOption:hover {
+  background: var(--bg-input);
+}
+
+.flagOption input {
+  accent-color: var(--accent);
+  cursor: pointer;
+  margin: 0;
+}
+
+.flagKey {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--accent);
+  width: 1ch;
+  text-align: center;
+}
+
+.flagText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.flagLabel {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.flagDesc {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--text-dim);
 }
 
 .slash {

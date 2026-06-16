@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { tokenizeRegex } from "../lib/regexTokenizer";
 import type { RegexToken, RegexTokenKind } from "../types";
+import { FlagsDropdown } from "./FlagsDropdown";
 import styles from "../styles/app.module.css";
 
 const KIND_CLASS: Record<RegexTokenKind, string> = {
@@ -68,20 +69,7 @@ export function RegexInput({ pattern, onPatternChange, flags, onFlagsChange }: P
         />
       </div>
       <span className={styles.slash}>/</span>
-      <input
-        className={styles.flagsField}
-        value={flags}
-        spellCheck={false}
-        autoCorrect="off"
-        autoCapitalize="off"
-        placeholder="flags"
-        onChange={(e) => {
-          const deduped = Array.from(new Set(e.target.value.split("")))
-            .filter((c) => /[gimsuy]/.test(c))
-            .join("");
-          onFlagsChange(deduped);
-        }}
-      />
+      <FlagsDropdown flags={flags} onFlagsChange={onFlagsChange} />
     </div>
   );
 }
