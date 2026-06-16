@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { MatchResult } from "../types";
 import styles from "../styles/app.module.css";
 import { MatchTooltip } from "./MatchTooltip";
@@ -53,9 +53,20 @@ export function SubjectEditor({ subject, onSubjectChange, matches }: Props) {
       overlay.scrollLeft = ta.scrollLeft;
     };
     ta.addEventListener("scroll", sync);
-    sync();
     return () => ta.removeEventListener("scroll", sync);
-  }, [subject]);
+  }, []);
+
+  // Re-align the overlay whenever its content changes. The segments rebuild on
+  // every regex/subject change, and that reflow can drop the overlay's scroll
+  // position out of sync with the textarea (which doesn't fire a scroll event).
+  // Run before paint so highlights are never shown misaligned.
+  useLayoutEffect(() => {
+    const ta = textareaRef.current;
+    const overlay = overlayRef.current;
+    if (!ta || !overlay) return;
+    overlay.scrollTop = ta.scrollTop;
+    overlay.scrollLeft = ta.scrollLeft;
+  }, [segments]);
 
   useEffect(() => {
     if (!hover) return;

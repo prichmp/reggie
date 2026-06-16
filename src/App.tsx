@@ -4,10 +4,11 @@ import { SubjectEditor } from "./components/SubjectEditor";
 import { Toolbar, type Mode } from "./components/Toolbar";
 import { ReplacePanel } from "./components/ReplacePanel";
 import { ListPanel } from "./components/ListPanel";
-import { compileRegex, runRegex } from "./lib/runRegex";
+import { compileRegex } from "./lib/runRegex";
 import { applyReplace } from "./lib/applyReplace";
 import { applyList } from "./lib/applyList";
-import type { MatchResult } from "./types";
+import { useRegexEngine } from "./hooks/useRegexEngine";
+import type { RegexRequest } from "./lib/regexEngine";
 import styles from "./styles/app.module.css";
 
 const STORAGE_KEY = "reggie:v1";
@@ -51,6 +52,21 @@ function useDebounced<T>(value: T, delay = 80): T {
   return debounced;
 }
 
+/** True only after `active` has stayed true for `delay` ms — avoids flashing
+ *  the computing indicator for fast regexes. */
+function useDelayed(active: boolean, delay: number): boolean {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (!active) {
+      setShown(false);
+      return;
+    }
+    const handle = setTimeout(() => setShown(true), delay);
+    return () => clearTimeout(handle);
+  }, [active, delay]);
+  return shown;
+}
+
 export function App() {
   const initial = useMemo(loadPersisted, []);
   const [pattern, setPattern] = useState(initial.pattern);
@@ -77,31 +93,41 @@ export function App() {
     }
   }, [pattern, flags, subject, mode, replaceTemplate, listTemplate]);
 
-  const compiled = useMemo<{ regex: RegExp | null; error: string | null }>(() => {
-    if (!pattern) return { regex: null, error: null };
+  // Validate the live pattern synchronously so syntax errors surface instantly,
+  // independent of the debounced/worker-driven match run below.
+  const compileError = useMemo<string | null>(() => {
+    if (!pattern) return null;
     try {
-      return { regex: compileRegex(pattern, flags), error: null };
+      compileRegex(pattern, flags);
+      return null;
     } catch (e) {
-      return { regex: null, error: e instanceof Error ? e.message : String(e) };
+      return e instanceof Error ? e.message : String(e);
     }
   }, [pattern, flags]);
 
+  const debouncedPattern = useDebounced(pattern);
+  const debouncedFlags = useDebounced(flags);
   const debouncedSubject = useDebounced(subject);
   const debouncedReplace = useDebounced(replaceTemplate);
   const debouncedList = useDebounced(listTemplate);
 
-  const matches = useMemo<MatchResult[]>(() => {
-    if (!compiled.regex) return [];
+  // Drive the worker only with valid, debounced input; `null` clears matches.
+  const request = useMemo<RegexRequest | null>(() => {
+    if (!debouncedPattern) return null;
     try {
-      return runRegex(compiled.regex, debouncedSubject);
+      compileRegex(debouncedPattern, debouncedFlags);
     } catch {
-      return [];
+      return null;
     }
-  }, [compiled.regex, debouncedSubject]);
+    return { pattern: debouncedPattern, flags: debouncedFlags, subject: debouncedSubject };
+  }, [debouncedPattern, debouncedFlags, debouncedSubject]);
+
+  const { matches, status } = useRegexEngine(request);
+  const computing = useDelayed(status === "computing", 150);
 
   const replaceOutput = useMemo(
-    () => applyReplace(debouncedSubject, matches, debouncedReplace, flags.includes("g")),
-    [debouncedSubject, matches, debouncedReplace, flags],
+    () => applyReplace(debouncedSubject, matches, debouncedReplace, debouncedFlags.includes("g")),
+    [debouncedSubject, matches, debouncedReplace, debouncedFlags],
   );
 
   const listOutput = useMemo(
@@ -109,15 +135,20 @@ export function App() {
     [matches, debouncedList],
   );
 
-  const statusText = compiled.error
-    ? `Invalid regex: ${compiled.error}`
-    : `${matches.length} match${matches.length === 1 ? "" : "es"}`;
+  const statusText = compileError
+    ? `Invalid regex: ${compileError}`
+    : computing
+      ? "Computing…"
+      : status === "too-slow"
+        ? "Regex too slow — aborted"
+        : `${matches.length} match${matches.length === 1 ? "" : "es"}`;
 
   return (
     <div className={styles.app}>
       <header className={styles.header}>
         <div className={styles.title}>Reggie</div>
-        <div className={compiled.error ? `${styles.status} ${styles.statusError}` : styles.status}>
+        <div className={compileError ? `${styles.status} ${styles.statusError}` : styles.status}>
+          {computing && <span className={styles.spinner} aria-hidden />}
           {statusText}
         </div>
       </header>

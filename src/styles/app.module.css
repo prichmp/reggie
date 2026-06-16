@@ -29,6 +29,24 @@
   color: var(--error);
 }
 
+.spinner {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 6px;
+  border: 2px solid var(--border);
+  border-top-color: var(--text);
+  border-radius: 50%;
+  vertical-align: -1px;
+  animation: reggie-spin 0.6s linear infinite;
+}
+
+@keyframes reggie-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .card {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
